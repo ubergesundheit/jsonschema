@@ -4,7 +4,6 @@ import (
 	"flag"
 	"github.com/xeipuuv/gojsonschema"
 	"io/ioutil"
-	_ "jsonval"
 	"log"
 	"os"
 )
