@@ -81,5 +81,7 @@ func main() {
 		for _, desc := range res.Errors() {
 			log.Printf("- %s\n", desc)
 		}
+		os.Exit(1)
 	}
+	os.Exit(0)
 }
