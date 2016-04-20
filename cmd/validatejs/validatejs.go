@@ -2,14 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/xeipuuv/gojsonschema"
-	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/xeipuuv/gojsonschema"
 )
 
-var schema = flag.String("schema", "schema.json", "Name of the schema file.")
-var json = flag.String("json", "json.json", "Name of the json file to check against the schema.")
+var schema = flag.String("schema", "file://schema.json", "Path of the schema file. (file:// or http(s)://)")
+var json = flag.String("json", "file://json.json", "Path of the json file to check against the schema. (file:// or http(s)://)")
 
 // Moven Message schema.
 var movenSchemaValidator *gojsonschema.Schema
@@ -17,7 +17,7 @@ var movenSchemaValidator *gojsonschema.Schema
 // LoadSchema loads the schema from a string.
 func LoadSchema(schema string) error {
 	var err error
-	schemaLoader := gojsonschema.NewStringLoader(schema)
+	schemaLoader := gojsonschema.NewReferenceLoader(schema)
 
 	movenSchemaValidator, err = gojsonschema.NewSchema(schemaLoader)
 	return err
@@ -25,7 +25,7 @@ func LoadSchema(schema string) error {
 
 // ValidateJson validates the Json string agains the movenSchemaValidator.
 func ValidateJson(json string) (*gojsonschema.Result, error) {
-	documentLoader := gojsonschema.NewStringLoader(json)
+	documentLoader := gojsonschema.NewReferenceLoader(json)
 	result, err := movenSchemaValidator.Validate(documentLoader)
 	return result, err
 }
@@ -34,42 +34,12 @@ func ValidateJson(json string) (*gojsonschema.Result, error) {
 func main() {
 	flag.Parse()
 
-	// Perform the checks: schema must exist.
-	fi, err := os.Stat(*schema)
-	if err != nil {
-		log.Fatalf("Cannot open schema file: %s", *schema)
-	}
-	if !fi.Mode().IsRegular() {
-		log.Fatalf("Schema file is not a regular file: %s", *schema)
-	}
-
-	// Perform the checks: json file must exist.
-	fi, err = os.Stat(*json)
-	if err != nil {
-		log.Fatalf("%s. Cannot find json file: %s.", err.Error(), *json)
-	}
-	if !fi.Mode().IsRegular() {
-		log.Fatalf("%s. Json file is not a regular file: %s", err.Error(), *json)
-	}
-
-	// Get the schema as a string.
-	schemaStr, err := ioutil.ReadFile(*schema)
-	if err != nil {
-		log.Fatalf("Failed to load the schema content: %s", err.Error())
-	}
-
-	// Get the json as a string.
-	jsonStr, err := ioutil.ReadFile(*json)
-	if err != nil {
-		log.Fatalf("Failed to load the json content: %s", err.Error())
-	}
-
-	err = LoadSchema(string(schemaStr))
+	err := LoadSchema(string(*schema))
 	if err != nil {
 		log.Fatalf("Failed to load the schema validator: %s", err.Error())
 	}
 
-	res, err := ValidateJson(string(jsonStr))
+	res, err := ValidateJson(string(*json))
 	if err != nil {
 		log.Fatalf("Error validating json: %s", err.Error())
 	}
